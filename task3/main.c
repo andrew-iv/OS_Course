@@ -20,9 +20,11 @@
  */
 FILE * fd_urls;
 const char url_prefix[] = "http";
-
+struct sigaction sa;
+struct sigaction previoussa;
+int status;
 void sigchld_handler(int signo, siginfo_t *info, void* context) {
-    int status;
+    
     while (waitpid(-1, &status, WNOHANG) > 0)
         if (WIFEXITED(status)) {
             if (WEXITSTATUS(status) == 0)
@@ -48,6 +50,12 @@ int main(int argc, char** argv) {
         printf(" Please input URLs 1 per line:\n");
         fd_urls = stdin;
     }
+    memset(&sa, 0, sizeof(struct sigaction));
+	sa.sa_flags = SA_SIGINFO;
+	sa.sa_sigaction = sigchld_handler;
+	sigaction(SIGCHLD, &sa, &previoussa);
+	
+    
     while (getline(&line, &line_len, fd_urls) != -1) {
         if (memcmp(url_prefix, line, 4) == 0) {
             url_number++;
