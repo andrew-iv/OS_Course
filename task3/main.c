@@ -21,19 +21,16 @@
 FILE * fd_urls;
 const char url_prefix[] = "http";
 
-void sigchld_handler(int signo, siginfo_t *info, void* context)
-{
-	int status;    
-	while(waitpid(-1,&status,WNOHANG)>0)        
-    if(WIFEXITED(status))
-	{
-		 if(WEXITSTATUS(status) == 0)
-			printf("precess with id: %d succefully finished",info->si_pid);
-         else
-             printf("precess with id: %d finished with error %d",info->si_pid,WEXITSTATUS(status));			
-	}
+void sigchld_handler(int signo, siginfo_t *info, void* context) {
+    int status;
+    while (waitpid(-1, &status, WNOHANG) > 0)
+        if (WIFEXITED(status)) {
+            if (WEXITSTATUS(status) == 0)
+                printf("precess with id: %d succefully finished", info->si_pid);
+            else
+                printf("precess with id: %d finished with error %d", info->si_pid, WEXITSTATUS(status));
+        }
 }
-
 
 int main(int argc, char** argv) {
     char *line = NULL;
@@ -66,7 +63,7 @@ int main(int argc, char** argv) {
                     fprintf(stderr, "Couldn't open %s, %s\n", filename, strerror(errno));
                     continue;
                 }
-
+                dup2(fd_output, 1);
 
                 int fd_dev_null = open("/dev/null", O_WRONLY | O_CREAT);
                 if (fd_dev_null == -1) {
@@ -78,7 +75,7 @@ int main(int argc, char** argv) {
             }
         }
     }
-    if(fd_urls != stdin)
+    if (fd_urls != stdin)
         fclose(fd_urls);
     return (0);
 }
