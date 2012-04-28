@@ -27,11 +27,12 @@ int fd[2];
 
 void sigchld_handler(int signo, siginfo_t *info, void* context) {
     int status;
-    while (waitpid(-1, &status, WNOHANG) > 0)
+	pid_t pid; 
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
         if (WIFEXITED(status)) {
             int exit_status = WEXITSTATUS(status);
             write(fd[1], &exit_status, sizeof (exit_status));
-            write(fd[1], &(info->si_pid), sizeof (pid_t));
+            write(fd[1], &pid, sizeof (pid_t));
         }
 }
 
@@ -59,7 +60,7 @@ int main(int argc, char** argv) {
     }
 
     memset(&sa, 0, sizeof (struct sigaction));
-    sa.sa_flags = SA_SIGINFO;
+    sa.sa_flags = SA_SIGINFO|SA_RESTART ;
     sa.sa_sigaction = sigchld_handler;
     sigaction(SIGCHLD, &sa, &previoussa);
 
@@ -91,6 +92,10 @@ int main(int argc, char** argv) {
                 close(0);
                 execlp("curl", "curl", line, NULL);
             }
+			if(p >0)
+			{
+				fprintf(stderr, "Forked id:%d\n",p);
+			}
         }
     }
     if (fd_urls != stdin)
@@ -100,21 +105,10 @@ int main(int argc, char** argv) {
         int success;
         pid_t pid;
         if (read(fd[0], &success, sizeof (success)) < 0) {
-            while(errno==EINTR)
-            {
-                if (read(fd[0], &success, sizeof (success)) > 0)
-                    break;
-            }
-            if(errno > 0)
             fprintf(stderr, "Couldn't read status %s\n", strerror(errno));
         };
-        if (read(fd[0], &pid, sizeof (pid)) < 0);
+        if (read(fd[0], &pid, sizeof (pid)) < 0)
         {
-            while(errno==EINTR)
-            {
-                if (read(fd[0], &pid, sizeof (pid)) > 0)
-                    break;
-            }            
             fprintf(stderr, "Couldn't read pid_t %s\n", strerror(errno));
         };
         if (success == 0) {
